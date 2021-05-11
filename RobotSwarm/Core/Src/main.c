@@ -81,7 +81,7 @@ int main(void)
 			  currentState = DRIVING;
 		  } else
 		  {
-			  rotateVehicle(30);
+			  rotateVehicle((HAL_GetTick() % 180) - 90);
 			  HAL_Delay(500);
 		  }
 		  break;

@@ -1,5 +1,6 @@
 #include "main.h"
 #include <stdio.h>
+#include <string.h>
 
 #define ARR_VALUE 20000
 #define DEGREES_90 ARR_VALUE / 20 * 1.28
@@ -18,11 +19,11 @@ static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 
 static void pinSetup(void);
-static void timerSetup(void);
+static void timer2Setup(void);
 static void setDutyCycleChannel1(float compareValue);
 static void setDutyCycleChannel2(float compareValue);
 static void rotateVehicle(int rotationDegrees);
-static void timerOutputSetup(void);
+static void timer2ChannelSetup(void);
 static void timer4Setup(void);
 static void drive(float power);
 
@@ -45,16 +46,25 @@ int main(void)
   HAL_Init();
   SystemClock_Config();
   MX_GPIO_Init();
-  MX_USART2_UART_Init();
 
   pinSetup();
   timer2Setup();
   timer2ChannelSetup();
   timer4Setup();
   TIM3_C1_Init();
+
+  MX_USART2_UART_Init();
   while (1)
   {
-	  double distance = timespan / 58;
+	  int distance = timespan / 58;
+	  static int printCounter = 0;
+	  if(HAL_GetTick() > 1000 * printCounter)
+	  {
+		  char buffer[50];
+		  sprintf(buffer, "%d\r\n", distance);
+		  HAL_UART_Transmit(&huart2, (uint8_t *)buffer, strlen(buffer), 100);
+		  printCounter++;
+	  }
 	  switch(currentState)
 	  {
 	  case STOPPED:
@@ -217,7 +227,7 @@ void TIM3_C1_Init(void){
     RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
 
     TIM3->PSC = 72 - 1;
-    TIM3->ARR = 1000 - 1;
+    TIM3->ARR = 65536 - 1;
     TIM3->CCMR1 &= ~TIM_CCMR1_CC1S;
     TIM3->CCMR1 |= TIM_CCMR1_CC1S_0;
     TIM3->CCMR1 &= ~TIM_CCMR1_IC1F;
@@ -243,16 +253,16 @@ void TIM3_IRQHandler(void){
     }
 
     // Check capture event flag
-    if ((TIM3->SR & TIM_SR_CC1IF) != 0)
+    else if ((TIM3->SR & TIM_SR_CC1IF) != 0)
     {
         if(lineHigh)
         {
-        	timespan = TIM3->SR - newcounter + 1000 * overflow;
+        	timespan = TIM3->CCR1 - newcounter + 65536 * overflow;
         	lineHigh = 0;
         } else
         {
-        	newcounter = TIM3->CCR1;
         	overflow = 0;
+        	newcounter = TIM3->CCR1;
         	lineHigh = 1;
         }
     }
@@ -320,7 +330,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 38400;
+  huart2.Init.BaudRate = 9600;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;

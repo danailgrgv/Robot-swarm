@@ -1,6 +1,7 @@
 #include <WiFi.h>
 #include <WiFiUdp.h>
 
+const byte BUFF_SIZE = 2;
 const byte NUM_CHARS = 100;
 char receivedChars[NUM_CHARS];
 char tempChars[NUM_CHARS]; // Temporary array for use when parsing
@@ -13,9 +14,6 @@ int udpPort = 9999; // Some random port
 
 bool newData = false;
 bool sendAvailable = false;
-
-int i = 10;
-int j = 4;
 
 WiFiUDP udp;
 
@@ -33,21 +31,19 @@ void connectToWiFi()
   sendAvailable = true;
 }
 
-void sendData(byte rpm, byte distance)
+void sendData()
 {
   // Data to be sent
-  uint8_t buffer[2];
-  buffer[0] = rpm;
-  buffer[1] = distance;
+  uint8_t buffer[BUFF_SIZE];
+
+  Serial2.readBytes(buffer, BUFF_SIZE);
 
   // Send data to server
   udp.beginPacket(udpAddress, udpPort);
-  udp.write(buffer, 2);
+  udp.write(buffer, BUFF_SIZE);
   udp.endPacket();
 
   delay(100);
-  i++;
-  j++;
 }
 
 void recvWithStartEndMarkers() {
@@ -99,7 +95,8 @@ void parseData() { // Split the data into its parts
 }
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
+  Serial2.begin(115200);
 }
 
 void loop() {
@@ -113,15 +110,8 @@ void loop() {
     connectToWiFi();
   }
 
-  if (sendAvailable == true)
+  if (sendAvailable == true) // Allowed to send data to C# application
   {
-    sendData(i, j);
-  }
-
-  if (i == 140) {
-    i = 0;
-  }
-  else if (j == 20) {
-    j = 0;
+    sendData();
   }
 }

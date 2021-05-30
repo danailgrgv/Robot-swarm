@@ -19,3 +19,4 @@ C:\Users\stefa\Documents\University\Semester3\Project\RobotDashboard\RobotDashbo
 C:\Users\stefa\Documents\University\Semester3\Project\RobotDashboard\RobotDashboard\obj\Debug\RobotDashboard.csproj.CopyComplete
 C:\Users\stefa\Documents\University\Semester3\Project\RobotDashboard\RobotDashboard\obj\Debug\RobotDashboard.exe
 C:\Users\stefa\Documents\University\Semester3\Project\RobotDashboard\RobotDashboard\obj\Debug\RobotDashboard.pdb
+C:\Users\stefa\Documents\University\Semester3\Project\RobotDashboard\RobotDashboard\obj\Debug\RobotDashboard.csprojAssemblyReference.cache

@@ -113,7 +113,7 @@ namespace RobotDashboard
             SerialPort serialPort = new SerialPort
             {
                PortName = deviceID,
-               BaudRate = 9600
+               BaudRate = 115200
             };
             serialPort.Open();
             string toSend = $"<{tbSSID.Text}:{tbPswrd.Text}:{localIP}:{PORTNUMBER}>";

@@ -8,11 +8,14 @@
 #define DEGREES_MINUS_90 ARR_VALUE / 20 * 1.72
 
 volatile int timespan = 0;                              // Total pulse width
+volatile int test = 0;
 volatile int lastcounter = 0;                           // Timer counter value of the last event
-volatile int newcounter = 0;                            // Timer counter value of the current event
-volatile int overflow = 0;                              // Count the number of overflows
+
+volatile int dutyCycleW1;
+volatile int dutyCycleW2;
 
 UART_HandleTypeDef huart2;
+SPI_HandleTypeDef hspi2;
 
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
@@ -26,6 +29,9 @@ static void rotateVehicle(int rotationDegrees);
 static void timer2ChannelSetup(void);
 static void timer4Setup(void);
 static void drive(float power);
+static void MX_TIM15_Init(void);
+
+static void MX_SPI2_Init(void);
 
 void TIM3_C1_Init(void);
 void TIM2_C3_Init(void);
@@ -51,7 +57,13 @@ int main(void)
   timer2Setup();
   timer2ChannelSetup();
   timer4Setup();
+  MX_TIM15_Init();
   TIM3_C1_Init();
+
+  //uartSetPins();
+  MX_SPI2_Init();
+
+
 
   MX_USART2_UART_Init();
   while (1)
@@ -61,7 +73,9 @@ int main(void)
 	  if(HAL_GetTick() > 1000 * printCounter)
 	  {
 		  char buffer[50];
-		  sprintf(buffer, "%d\r\n", distance);
+		  sprintf(buffer, "%d\r\n", dutyCycleW2);
+		  HAL_UART_Transmit(&huart2, (uint8_t *)buffer, strlen(buffer), 100);
+		  sprintf(buffer, "%d\r\n", dutyCycleW1);
 		  HAL_UART_Transmit(&huart2, (uint8_t *)buffer, strlen(buffer), 100);
 		  printCounter++;
 	  }
@@ -109,11 +123,11 @@ static void drive(float power)
 
 static void pinSetup(void)
 {
-	GPIOA->MODER |= GPIO_MODER_MODER5_1 | GPIO_MODER_MODER1_1 | GPIO_MODER_MODER2_1;
-	GPIOA->MODER &= ~(GPIO_MODER_MODER5_0 | GPIO_MODER_MODER1_0 | GPIO_MODER_MODER2_0);
+	GPIOA->MODER |= GPIO_MODER_MODER5_1 | GPIO_MODER_MODER1_1;
+	GPIOA->MODER &= ~(GPIO_MODER_MODER5_0 | GPIO_MODER_MODER1_0);
 
-	GPIOA->AFR[0] &= ~(GPIO_AFRL_AFRL5_Msk | GPIO_AFRL_AFRL1_Msk | GPIO_AFRL_AFRL2_Msk);
-	GPIOA->AFR[0] |= (1 << GPIO_AFRL_AFRL5_Pos) | (1 << GPIO_AFRL_AFRL1_Pos) | (1 << GPIO_AFRL_AFRL2_Pos);
+	GPIOA->AFR[0] &= ~(GPIO_AFRL_AFRL5_Msk | GPIO_AFRL_AFRL1_Msk);
+	GPIOA->AFR[0] |= (1 << GPIO_AFRL_AFRL5_Pos) | (1 << GPIO_AFRL_AFRL1_Pos);
 
 }
 
@@ -150,6 +164,60 @@ static void timer4Setup(void)
 	TIM4->CR1 |= TIM_CR1_CEN;
 }
 
+/**
+  * @brief TIM15 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM15_Init(void)
+{
+    //Pin setup rewrite
+    GPIOB->MODER |= GPIO_MODER_MODER14_1;
+    GPIOB->MODER &= ~GPIO_MODER_MODER14_0;
+
+    GPIOB->PUPDR &= ~GPIO_PUPDR_PUPDR14_Msk;
+
+    GPIOB->AFR[1] &= ~GPIO_AFRH_AFRH6_Msk;
+    GPIOB->AFR[1] |= (0x1 << GPIO_AFRH_AFRH6_Pos);
+
+    GPIOB->MODER |= GPIO_MODER_MODER15_1;
+    GPIOB->MODER &= ~GPIO_MODER_MODER15_0;
+
+    GPIOB->PUPDR &= ~GPIO_PUPDR_PUPDR15_Msk;
+
+    GPIOB->AFR[1] &= ~GPIO_AFRH_AFRH7_Msk;
+    GPIOB->AFR[1] |= (0x1 << GPIO_AFRH_AFRH7_Pos);
+
+    //Timer rewrite
+    RCC->APB2ENR |= RCC_APB2ENR_TIM15EN;
+
+    TIM15->PSC = 72 - 1;
+    TIM15->ARR = 1099 - 1;
+    TIM15->CCMR1 &= ~TIM_CCMR1_CC1S;
+    TIM15->CCMR1 |= TIM_CCMR1_CC1S_0;
+    TIM15->CCMR1 &= ~TIM_CCMR1_IC1F;
+    TIM15->CCMR1 &= ~TIM_CCMR1_IC1PSC;
+    TIM15->CCER |= TIM_CCER_CC1P | TIM_CCER_CC1NP;
+    TIM15->CCER |= TIM_CCER_CC1E;
+    TIM15->DIER |= TIM_DIER_CC1IE;
+    TIM15->DIER |= TIM_DIER_CC1DE;	//DMA request
+    TIM15->DIER |= TIM_DIER_UIE;
+    //TIM15->CR1 &= ~TIM_CR1_DIR;
+
+	TIM15->CCMR1 &= ~TIM_CCMR1_CC2S;
+	TIM15->CCMR1 |= TIM_CCMR1_CC2S_0;
+	TIM15->CCMR1 &= ~TIM_CCMR1_IC2F;
+	TIM15->CCMR1 &= ~TIM_CCMR1_IC2PSC;
+	TIM15->CCER |= TIM_CCER_CC2P | TIM_CCER_CC2NP;
+	TIM15->CCER |= TIM_CCER_CC2E;
+	TIM15->DIER |= TIM_DIER_CC2IE;
+	TIM15->DIER |= TIM_DIER_CC2DE;	//DMA request
+	//TIM15->CR2 &= ~TIM_CR2_DIR;
+	TIM15->CR1 |= TIM_CR1_CEN;
+    NVIC_SetPriority(TIM1_BRK_TIM15_IRQn, 2);
+    NVIC_EnableIRQ(TIM1_BRK_TIM15_IRQn);
+}
+
 static void setDutyCycleChannel1(float power)
 {
 	if(power > 1) power = 1;
@@ -179,13 +247,6 @@ static void timer2ChannelSetup(void)
 	TIM2->CCR2 |= 0;
 	TIM2->CCER |= TIM_CCER_CC2E_Msk;
 	TIM2->CCER &= ~TIM_CCER_CC2P_Msk;
-
-	//Configure channel 3
-	TIM2->CCMR2 &= ~(TIM_CCMR2_CC3S_Msk | TIM_CCMR2_OC3M_Msk | TIM_CCMR2_OC3PE_Msk);
-	TIM2->CCMR2 |= TIM_CCMR2_OC3M_2 | TIM_CCMR2_OC3M_1;
-	TIM2->CCR3 |= 0;
-	TIM2->CCER |= TIM_CCER_CC3E_Msk;
-	TIM2->CCER &= ~TIM_CCER_CC3P_Msk;
 
 	TIM2->CR1 |= TIM_CR1_CEN;
 }
@@ -245,6 +306,8 @@ void TIM3_C1_Init(void){
 
 void TIM3_IRQHandler(void){
 	static int lineHigh = 0;
+	static int overflow = 0;
+	static int newcounter = 0;
 	// Check the update event flag
     if ((TIM3->SR & TIM_SR_UIF) != 0)
     {
@@ -266,7 +329,54 @@ void TIM3_IRQHandler(void){
         	lineHigh = 1;
         }
     }
-    EXTI->PR |= EXTI_PR_PIF4;
+    EXTI->PR |= EXTI_PR_PIF3;
+}
+
+
+
+void TIM15_IRQHandler(void){
+	static int lineHighW1 = 0;
+	static int overflowW1 = 0;
+	static int newcounterW1 = 0;
+	static int lineHighW2 = 0;
+	static int overflowW2 = 0;
+	static int newcounterW2 = 0;
+	// Check the update event flag
+    if ((TIM15->SR & TIM_SR_UIF) != 0)
+    {
+    	overflowW1++;                        // if UIF = 1, increment overflow counter
+    	overflowW2++;
+        TIM15->SR &= ~TIM_SR_UIF;           // clear UIF
+    }
+
+    // Check capture event flag
+    else if ((TIM15->SR & TIM_SR_CC1IF) != 0)
+    {
+        if(lineHighW1)
+        {
+        	dutyCycleW1 = 100 * (TIM15->CCR1 - newcounterW1 + 1099 * overflowW1) / 1099;
+        	lineHighW1 = 0;
+        } else
+        {
+        	lineHighW1 = 1;
+        	newcounterW1 = TIM15->CCR1;
+        	overflowW1 = 0;
+        }
+    }
+    else if ((TIM15->SR & TIM_SR_CC2IF) != 0)
+    {
+        if(lineHighW2)
+        {
+        	dutyCycleW2 = 100 * (TIM15->CCR2 - newcounterW2 + 1099 * overflowW2) / 1099;
+        	lineHighW2 = 0;
+        } else
+        {
+        	lineHighW2 = 1;
+        	newcounterW2 = TIM15->CCR2;
+        	overflowW2 = 0;
+        }
+    }
+    EXTI->PR |= EXTI_PR_PIF15;
 }
 
 /**
@@ -349,6 +459,28 @@ static void MX_USART2_UART_Init(void)
 
 }
 
+static void MX_SPI2_Init(void)
+{
+  hspi2.Instance = SPI2;
+  hspi2.Init.Mode = SPI_MODE_MASTER;
+  hspi2.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi2.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi2.Init.NSS = SPI_NSS_SOFT;
+  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_128;
+  hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi2.Init.CRCPolynomial = 7;
+  hspi2.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
+  hspi2.Init.NSSPMode = SPI_NSS_PULSE_DISABLE;
+  if (HAL_SPI_Init(&hspi2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
+
 /**
   * @brief GPIO Initialization Function
   * @param None
@@ -379,6 +511,19 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PA5 PA6 */
+  GPIO_InitStruct.Pin = GPIO_PIN_5|GPIO_PIN_6;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PA7 */
+  GPIO_InitStruct.Pin = GPIO_PIN_7;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
 }
 

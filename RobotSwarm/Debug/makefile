@@ -54,8 +54,8 @@ all: main-build
 main-build: RobotSwarm.elf secondary-outputs
 
 # Tool invocations
-RobotSwarm.elf: $(OBJS) $(USER_OBJS) C:\git\Semester3Technology\robotswarm\RobotSwarm\STM32F303RETX_FLASH.ld
-	arm-none-eabi-gcc -o "RobotSwarm.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\git\Semester3Technology\robotswarm\RobotSwarm\STM32F303RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="RobotSwarm.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+RobotSwarm.elf: $(OBJS) $(USER_OBJS) C:\git\Semester_3\robotswarm\RobotSwarm\STM32F303RETX_FLASH.ld
+	arm-none-eabi-gcc -o "RobotSwarm.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\git\Semester_3\robotswarm\RobotSwarm\STM32F303RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="RobotSwarm.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

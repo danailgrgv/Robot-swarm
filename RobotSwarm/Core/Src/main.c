@@ -73,9 +73,9 @@ int main(void)
 	  if(HAL_GetTick() > 1000 * printCounter)
 	  {
 		  char buffer[50];
-		  sprintf(buffer, "%d\r\n", dutyCycleW2);
-		  HAL_UART_Transmit(&huart2, (uint8_t *)buffer, strlen(buffer), 100);
-		  sprintf(buffer, "%d\r\n", dutyCycleW1);
+		  sprintf(buffer, "%d\r\n", distance);
+		  //HAL_UART_Transmit(&huart2, (uint8_t *)buffer, strlen(buffer), 100);
+		  //sprintf(buffer, "%d\r\n", dutyCycleW1);
 		  HAL_UART_Transmit(&huart2, (uint8_t *)buffer, strlen(buffer), 100);
 		  printCounter++;
 	  }
@@ -98,6 +98,8 @@ int main(void)
 		  if(prevState != currentState)
 		  {
 			  drive(0);
+			  int direction = HAL_GetTick() % 2;
+			  //rotateVehicle(direction);
 			  prevState = currentState;
 		  }
 		  if(distance > 10)
@@ -105,8 +107,9 @@ int main(void)
 			  currentState = DRIVING;
 		  } else
 		  {
-			  rotateVehicle((HAL_GetTick() % 180) - 90);
-			  HAL_Delay(500);
+
+			  rotateVehicle(90);
+			  //HAL_Delay(200);
 		  }
 		  break;
 	  default:
@@ -254,10 +257,10 @@ static void timer2ChannelSetup(void)
 static void rotateVehicle(int rotationDegrees)
 {
 
-	if(rotationDegrees == 0) return;
+	//if(rotationDegrees == 0) return;
 	int delay;
 	float power;
-	if(rotationDegrees < 0)
+	if(rotationDegrees == 0)
 	{
 		delay = -(20 + 13.67 * rotationDegrees);
 		power = -0.3;
@@ -269,8 +272,8 @@ static void rotateVehicle(int rotationDegrees)
 	setDutyCycleChannel1(power);
 	setDutyCycleChannel2(power);
 	HAL_Delay(delay);
-	setDutyCycleChannel1(0);
-	setDutyCycleChannel2(0);
+	//setDutyCycleChannel1(0);
+	//setDutyCycleChannel2(0);
 }
 
 // CONFIGURE TIM4 FOR RECEIVING INPUT SIGNAL
@@ -354,7 +357,7 @@ void TIM15_IRQHandler(void){
     {
         if(lineHighW1)
         {
-        	dutyCycleW1 = 100 * (TIM15->CCR1 - newcounterW1 + 1099 * overflowW1) / 1099;
+        	dutyCycleW1 = ((100 * (TIM15->CCR1 - newcounterW1 + 1099 * overflowW1) / 1099) - 2.9) * 360 /(91.7 - 2.9 + 1);
         	lineHighW1 = 0;
         } else
         {
@@ -367,7 +370,7 @@ void TIM15_IRQHandler(void){
     {
         if(lineHighW2)
         {
-        	dutyCycleW2 = 100 * (TIM15->CCR2 - newcounterW2 + 1099 * overflowW2) / 1099;
+        	dutyCycleW2 = ((100 * (TIM15->CCR2 - newcounterW2 + 1099 * overflowW2) / 1099) - 2.9) * 360 /(91.7 - 2.9 + 1);
         	lineHighW2 = 0;
         } else
         {

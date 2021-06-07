@@ -1,6 +1,6 @@
 core_cm4.h:1688:22:__NVIC_EnableIRQ	16	static
 core_cm4.h:1816:22:__NVIC_SetPriority	16	static
-main.c:53:5:main	64	static
+main.c:50:5:main	72	static
 main.c:121:13:drive	16	static
 main.c:127:13:pinSetup	4	static
 main.c:137:13:timer2Setup	4	static

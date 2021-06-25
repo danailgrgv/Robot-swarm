@@ -85,7 +85,7 @@ namespace RobotDashboard
 
             // Find COM port of ESP32
             string deviceID = string.Empty;
-            ManagementScope connectionScope = new ManagementScope();
+            ManagementScope connectionScope = new ManagementScope();    
             SelectQuery serialQuery = new SelectQuery("SELECT * FROM Win32_SerialPort");
             ManagementObjectSearcher searcher = new ManagementObjectSearcher(connectionScope, serialQuery);
 

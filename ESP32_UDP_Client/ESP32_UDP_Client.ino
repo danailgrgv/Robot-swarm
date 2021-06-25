@@ -37,6 +37,7 @@ void sendData()
   uint8_t buffer[BUFF_SIZE];
 
   Serial2.readBytes(buffer, BUFF_SIZE);
+  Serial.write(buffer, BUFF_SIZE);
 
   // Send data to server
   udp.beginPacket(udpAddress, udpPort);
@@ -109,6 +110,14 @@ void loop() {
     newData = false;
     connectToWiFi();
   }
+  uint8_t buffer[BUFF_SIZE];
+
+  //Serial2.readBytes(buffer, BUFF_SIZE);
+  //Serial.write(buffer, BUFF_SIZE);
+  //for(int i = 0; i < BUFF_SIZE; i++)
+  //{
+  //  Serial.print((char)buffer[i]);
+  //}
 
   if (sendAvailable == true) // Allowed to send data to C# application
   {

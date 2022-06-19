@@ -1,6 +1,7 @@
 # Robot Swarm
 
-This project is about creating a robot that swarms around.
+This project is about creating an autonomous car robot. See documentation for details
+
 
 ## About us
 | First name |  Last name |         E-mail           |  Student number  |   PCN    |
